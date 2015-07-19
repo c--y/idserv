@@ -37,22 +37,26 @@ func NewServer(config *Config) (*Server, error) {
 }
 
 func (s *Server) HandleRequest(conn net.Conn) {
-	fmt.Println("handle req")
+	fmt.Println("Handler Request:", conn.RemoteAddr())
 	defer conn.Close()
 	buf := make([]byte, PacketSize)
-	_, err := conn.Read(buf)
-	if err != nil {
-		fmt.Println("Error reading:", err.Error())
-		return
-	}
 
-	if !bytes.Equal(packet, buf) {
-		fmt.Println("Error packet.")
-		return
-	}
+	for {
+		_, err := conn.Read(buf)
+		if err != nil {
+			fmt.Println("Error reading:", err.Error())
+			return
+		}
 
-	id := <-s.Out
-	binary.Write(conn, binary.LittleEndian, id)
+		if !bytes.Equal(packet, buf) {
+			fmt.Println("Error packet.")
+			binary.Write(conn, binary.LittleEndian, 0)
+			return
+		}
+
+		id := <-s.Out
+		binary.Write(conn, binary.LittleEndian, id)
+	}
 }
 
 func (s *Server) Serv() {
